@@ -9,7 +9,7 @@ class Pumpkin:
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.speed = random.randrange(1,20)
-        self.points = random.randrange(50,1000)
+        self.points = random.randrange(50,1870)
         self.texture = texture
         self.size = size
         self.alive = True
@@ -27,12 +27,12 @@ class Pumpkin:
             draw_rectangle_rec(self.box,Color(100,50,100,self.alpha))
             self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size) # main problem is the way it scales down is not centered
             self.pos_y +=self.speed
-        if self.pos_y >= 720:
+        if self.pos_y >= 1080:
             self.lose_points = True
             self.alive = False
         if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT):
             if check_collision_recs(player1.collisionbox,self.box) and self.alive ==True:
-                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),255,0,0,None,10,120,1))
+                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),253, 249, 0,None,10,120,1))
                 self.health -=damage
                 self.alpha -=int(255/self.max_health)
                 self.size -=5
@@ -40,8 +40,8 @@ class Pumpkin:
                     textattack_list.append(Text(f"+10",100,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0,255,0,None,10,120,1))
                     self.alive = False
                     self.gain_points = True
-
     def award_points(self):
+        global textattack_list
         global score
         if self.status == True:
             if self.alive == False:
@@ -49,7 +49,8 @@ class Pumpkin:
                     score +=10 #use the floating thingy to make the score float up &&& add the particles
                 else:
                     score -=10 # use the floating and shake thingy
-                
+                    textattack_list.append(Text(f"-10",250,random.randrange(0,1620),random.randrange(0,680),255, 0, 0,None,10,120,1))
+                    lose_health.shake_ya_booty
                 self.status = False
 class SpawnParticles:
     def __init__(self,min_particles,max_particles,min_speed,max_speed,min_size,max_size,min_resistance,max_resistance,gravity,colors:list,posx,posy,shrink_rate,shrink_factor,cutoff,remove):
@@ -214,7 +215,6 @@ class Player:
             particles_shoot_list.append(SpawnParticles(2,10,1,2,4,5,1,10,0,[YELLOW,WHITE],player1.position.x,player1.position.y,0.2,0.2,1,1))
             particless+=1
             particles_shoot_list[particless].Randomize()
-            print(particless)
         for particle in particles_shoot_list:
             particle.Spawn()
         if is_mouse_button_released(rl.MOUSE_BUTTON_LEFT):
@@ -255,20 +255,25 @@ particles_hit_list = []
 particles_shoot_list = []
 particles_destroy_list = []
 #class Structures
-lose_health:Shake = Shake(10,11,20,30,5,0)
+lose_health:Shake = Shake(1,2,20,30,5,0)
 kill:Shake = Shake(10,11,20,30,5,0)
 particle_hit:SpawnParticles = SpawnParticles(5,7,1,2,3,7,1,10,0,[WHITE,ORANGE],player1.position.x,player1.position.y,1,1,1,1)
 particle_shoot:SpawnParticles = SpawnParticles(4,5,1,2,3,7,1,10,0,[YELLOW,WHITE],player1.position.x,player1.position.y,1,1,1,1)
 particle_destroy:SpawnParticles = SpawnParticles(100,300,10,40,3,7,1,10,0,[ORANGE,WHITE,Color(222, 116, 22,255),Color(255, 178, 0,255)],player1.position.x,player1.position.y,1,1,1,1)
 # text_gain:Text = Text()
 # text_lost:Text = Text()
-
+level1cam = Camera2D(Vector2(0,0),Vector2(0,0),0,1)
 init_window(1280,720,"BOB")
+lose_health.Randomize()
+toggle_fullscreen()
 set_target_fps(60)
 hide_cursor()
 while not window_should_close():
     begin_drawing()
+    begin_mode_2d(level1cam)
     clear_background(BLACK)
+    level1cam.rotation = lose_health.currentvalue
+    print(level1cam.rotation)
     for pumpk in pumpkins:
         pumpk.Spawn()
         pumpk.award_points()
@@ -283,8 +288,9 @@ while not window_should_close():
             textattack_list[i]
     draw_text(f"{int(score)}",400,0,40,GREEN)
     if pumpkin_cooldown.Start_timer():
-        pumpkins.append(Pumpkin(random.randrange(0,1000,50),0,"textureNone",100))
+        pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,"textureNone",100))
         pumpkin_cooldown = Cooldown(random.uniform(0,1))
+    end_mode_2d()
     end_drawing()
 close_window()
                     
