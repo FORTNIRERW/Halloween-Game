@@ -22,6 +22,7 @@ class Pumpkin:
         self.status = True
     def Spawn(self):
         global damage
+        global textattack_list
         if self.alive == True:
             draw_rectangle_rec(self.box,Color(100,50,100,self.alpha))
             self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size) # main problem is the way it scales down is not centered
@@ -30,13 +31,16 @@ class Pumpkin:
             self.lose_points = True
             self.alive = False
         if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT):
-            if check_collision_recs(player1.collisionbox,self.box):
+            if check_collision_recs(player1.collisionbox,self.box) and self.alive ==True:
+                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),255,0,0,None,10,120,1))
                 self.health -=damage
                 self.alpha -=int(255/self.max_health)
                 self.size -=5
                 if self.health <= 0 or self.alpha <=30:
+                    textattack_list.append(Text(f"+10",100,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0,255,0,None,10,120,1))
                     self.alive = False
                     self.gain_points = True
+
     def award_points(self):
         global score
         if self.status == True:
@@ -109,19 +113,21 @@ class SpawnParticles:
             if self.list_size[i-1] <= self.remove:
                 break
 class Text:
-    def __init__(self,text,size,posx,posy,color,font,spacing,time,slowness):
+    def __init__(self,text,size,posx,posy,r,g,b,font,spacing,time,slowness):
         self.text = text
         self.size = size
         self.posx = posx
         self.posy = posy
-        self.color = color
+        self.r = r        
+        self.g = g
+        self.b = b
         self.font = font
         self.spacing = spacing
         self.frame = 0
         self.time = time
         self.slowness = slowness
         self.opacity = 255
-        self.color = Color(0,255,0,self.opacity)
+        self.color = Color(self.r,self.g,self.b,self.opacity)
     def reset(self,posx,posy):
         self.frame = 0
         self.posy = posy
@@ -136,7 +142,7 @@ class Text:
             return
         if self.opacity <=1:
             self.opacity = 0
-        self.color = Color(0,255,0,self.opacity)
+        self.color = Color(self.r,self.g,self.b,self.opacity)
         self.frame +=1
         if self.frame % self.slowness ==0:
             self.opacity -=5
@@ -214,15 +220,6 @@ class Player:
         if is_mouse_button_released(rl.MOUSE_BUTTON_LEFT):
             particles_shoot_list = []
             particless = -1
-            
-
-
-
-
-
-
-
-
 class Cooldown:
     def __init__(self,time):
         self.time = time
@@ -250,7 +247,7 @@ pumpkin = Pumpkin(500,0,"textureNone",50)
 
 #class lists
 pumpkins = []
-textgain_list = []
+textattack_list = []
 textlose_list = []
 shake_kill_list = []
 shake_lose_health_list = []
@@ -280,6 +277,10 @@ while not window_should_close():
     player1.shoot()
     pumpkin.Spawn()
     pumpkin.award_points()
+    for i in range(0,len(textattack_list)):
+        textattack_list[i].FloatText() #this draws items that are within the list
+        if textattack_list[i].opacity <=0:
+            textattack_list[i]
     draw_text(f"{int(score)}",400,0,40,GREEN)
     if pumpkin_cooldown.Start_timer():
         pumpkins.append(Pumpkin(random.randrange(0,1000,50),0,"textureNone",100))
