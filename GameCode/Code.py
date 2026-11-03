@@ -2,8 +2,8 @@ import raylib as rl
 from pyray import *
 import random
 particless =-1
-damage = 100
-score = 0
+damage = 2
+score = 100
 ammo = 200
 max_ammo = 200
 gunsize = 50
@@ -11,11 +11,68 @@ pumpkin_damage=1
 max_money_gained =10
 mult =1
 reload_time = 2
-pumpkin_spawn_rate = 3
+pumpkin_spawn_rate = 1
 level = 1
-combo_cooldown = 5
+combo_cooldown = 2
 max_health = 20
+pumpkinspeed = 5
+maxspeed = 20
 combo = False
+dead = False
+def reset():
+    global particless
+    global damage
+    global score
+    global ammo
+    global max_ammo
+    global gunsize
+    global pumpkin_damage
+    global max_money_gained
+    global mult
+    global reload_time
+    global pumpkin_spawn_rate
+    global level
+    global combo_cooldown
+    global max_health
+    global pumpkinspeed
+    global maxspeed
+    global combo
+    global dead
+    global pumpkins
+    global textattack_list
+    global particles_hit_list
+    global particles_shoot_list
+    global particles_destroy_list
+    global levelup
+    global upgrade_screen
+    global game_screen
+
+    particless =-1
+    damage = 2
+    score = 100
+    ammo = 200
+    max_ammo = 200
+    gunsize = 50
+    pumpkin_damage=1
+    max_money_gained =10
+    mult =1
+    reload_time = 2
+    pumpkin_spawn_rate = 1
+    level = 1
+    combo_cooldown = 2
+    max_health = 20
+    pumpkinspeed = 5
+    maxspeed = 20
+    combo = False
+    dead = False
+    pumpkins = []
+    textattack_list = []
+    particles_hit_list = []
+    particles_shoot_list = []
+    particles_destroy_list = []
+    levelup = False
+    upgrade_screen = False
+    game_screen = True
 
 class Pumpkin:
     def __init__(self,pos_x,pos_y,texture,size):
@@ -23,7 +80,7 @@ class Pumpkin:
         global max_money_gained
         self.pos_x = pos_x
         self.pos_y = pos_y
-        self.speed = random.randrange(1,20)
+        self.speed = random.randrange(1,maxspeed)
         self.points = max_money_gained
         self.texture = texture
         self.size = size
@@ -248,7 +305,7 @@ class Player:
         if is_mouse_button_released(rl.MOUSE_BUTTON_LEFT):
             particles_shoot_list = []
             particless = -1
-        if ammo == 0 and is_key_pressed(rl.KEY_R):
+        if is_key_pressed(rl.KEY_R):
             reloading = True
 class Cooldown:
     def __init__(self,time):
@@ -269,6 +326,8 @@ class Cooldown:
         self.started = False
         self.frame = 0
         self.ended = False
+
+
 reloading = False
 reload_cooldown = Cooldown(reload_time)
 pumpkin_cooldown = Cooldown(pumpkin_spawn_rate)
@@ -289,8 +348,6 @@ kill:Shake = Shake(10,11,20,30,5,0,1)
 particle_hit:SpawnParticles = SpawnParticles(5,7,1,2,3,7,1,10,0,[WHITE,ORANGE],player1.position.x,player1.position.y,1,1,1,1)
 particle_shoot:SpawnParticles = SpawnParticles(4,5,1,2,3,7,1,10,0,[YELLOW,WHITE],player1.position.x,player1.position.y,1,1,1,1)
 particle_destroy:SpawnParticles = SpawnParticles(100,300,10,40,3,7,1,10,0,[ORANGE,WHITE,Color(222, 116, 22,255),Color(255, 178, 0,255)],player1.position.x,player1.position.y,1,1,1,1)
-# text_gain:Text = Text()
-# text_lost:Text = Text()
 level1cam = Camera2D()
 level1cam.offset=(Vector2(0,0))
 level1cam.zoom=1
@@ -314,49 +371,54 @@ while not window_should_close():
 
     
 
-
     begin_drawing()
     begin_mode_2d(level1cam)
     clear_background(BLACK)
-    for pumpk in pumpkins:
-        pumpk.Spawn()
-        pumpk.award_points()
-    
-    player1.shootparticles()
-    player1.draw()
-    player1.shoot()
-    pumpkin.Spawn()
-    pumpkin.award_points()
-    for i in range(0,len(textattack_list)):
-        textattack_list[i].FloatText() #this draws items that are within the list
-        if textattack_list[i].opacity <=0:
-            textattack_list[i]
-    draw_text(f"${int(score)} Money",400,0,40,GREEN)
-    draw_text(f"{int(ammo)} Ammo",400,40,40,YELLOW)
-    if pumpkin_cooldown.Start_timer():
-        pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,"textureNone",100))
-        pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
-    if ammo ==0 and reloading == False:
-        draw_text(f"Press R to Reload",0,400,200,WHITE)
-    if reloading == True:
-        draw_text(f"Reloading........",0,400,200,WHITE)
-        reload_cooldown.Start_timer()
-        if reload_cooldown.Start_timer():
-            particles_shoot_list = []
-            particless = -1
-            ammo = max_ammo
-            reload_cooldown.Reset_timer()
-            reloading = False
-    if combo == True:
-        combo_timer.Start_timer()
-        if combo_timer.Start_timer() == True:
-            combo_timer.Reset_timer()
-            mult = 1
-            combo = False
-    draw_text(f"Level {level}",400,80,50,WHITE)
-    draw_text(f"spawn_rate {pumpkin_spawn_rate}",400,120,50,WHITE)
-    draw_text(f"Time {game_time}",400,160,50,WHITE)
-    draw_text(f"Zoom {level1cam.zoom}",400,200,50,WHITE)
+    if game_screen == True and dead == False:
+        for pumpk in pumpkins:
+            pumpk.Spawn()
+            pumpk.award_points()
+
+        player1.shootparticles()
+        player1.draw()
+        player1.shoot()
+        for i in range(0,len(textattack_list)):
+            textattack_list[i].FloatText() #this draws items that are within the list
+            if textattack_list[i].opacity <=0:
+                textattack_list[i]
+        draw_text(f"${int(score)} Money",400,0,40,GREEN)
+        draw_text(f"{int(ammo)} Ammo",400,40,40,YELLOW)
+        if pumpkin_cooldown.Start_timer():
+            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,"textureNone",100))
+            pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
+        if ammo ==0 and reloading == False:
+            draw_text(f"Press R to Reload",0,400,200,WHITE)
+        if reloading == True:
+            draw_text(f"Reloading........",0,400,200,WHITE)
+            reload_cooldown.Start_timer()
+            ammo = 0
+            if reload_cooldown.Start_timer():
+                particles_shoot_list = []
+                particless = -1
+                ammo = max_ammo
+                reload_cooldown.Reset_timer()
+                reloading = False
+        if combo == True:
+            combo_timer.Start_timer()
+            if combo_timer.Start_timer() == True:
+                combo_timer.Reset_timer()
+                mult = 1
+                combo = False
+        if score <= 0:
+            dead = True
+        draw_text(f"Level {level}",400,80,50,WHITE)
+        draw_text(f"spawn_rate {pumpkin_spawn_rate}",400,120,50,WHITE)
+        draw_text(f"Time {game_time}",400,160,50,WHITE)
+        draw_text(f"Zoom {level1cam.zoom}",400,200,50,WHITE)
+    if dead == True and game_screen == True:
+        draw_text("R to Restart",20,300,250,WHITE)
+        if is_key_pressed(rl.KEY_R):
+            reset()
     end_mode_2d()
     end_drawing()
 close_window()
