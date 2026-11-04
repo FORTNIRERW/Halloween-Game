@@ -4,6 +4,7 @@ import random
 particless =-1
 damage = 2
 score = 100
+tokens = 0
 ammo = 200
 max_ammo = 200
 gunsize = 50
@@ -12,9 +13,12 @@ max_money_gained =10
 mult =1
 reload_time = 2
 pumpkin_spawn_rate = 1
+special_spawn_rate =20
+max_tokens_gained = 1
 level = 1
-combo_cooldown = 2
+combo_cooldown = 10
 max_health = 20
+max_health_special = 100
 pumpkinspeed = 5
 maxspeed = 20
 combo = False
@@ -46,10 +50,19 @@ def reset():
     global levelup
     global upgrade_screen
     global game_screen
+    global tokens
+    global max_tokens_gained
+    global special_spawn_rate
+    global max_health_special
+    global special
 
     particless =-1
     damage = 2
     score = 100
+    tokens = 0
+    special_spawn_rate = 20
+    max_health_special =100
+    max_tokens_gained = 1
     ammo = 200
     max_ammo = 200
     gunsize = 50
@@ -66,6 +79,7 @@ def reset():
     combo = False
     dead = False
     pumpkins = []
+    special = []
     textattack_list = []
     particles_hit_list = []
     particles_shoot_list = []
@@ -121,6 +135,7 @@ class Pumpkin:
         if self.status == True:
             if self.alive == False:
                 if self.gain_points == True:
+                    combo_timer.Reset_timer()
                     if mult>=2:
                         score +=self.points*(mult-1)
                         combo = True
@@ -132,6 +147,60 @@ class Pumpkin:
                 else:
                     score -=10 # use the floating and shake thingy
                     textattack_list.append(Text(f"-$10",250,random.randrange(0,1620),random.randrange(0,680),255, 0, 0,None,10,120,1))
+                self.status = False
+class Special:
+    def __init__(self,pos_x,pos_y,texture,size):
+        global mult
+        global max_tokens_gained
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.speed = 3
+        self.Tokens = max_tokens_gained
+        self.texture = texture
+        self.size = size
+        self.alive = True
+        self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size)
+        self.gain_Tokens = False
+        self.health = max_health_special
+        self.max_health = self.health
+        self.alpha = 255
+        self.status = True
+    def Spawn(self):
+        global damage
+        global textattack_list
+        global ammo
+        global mult
+        if self.alive == True:
+            draw_rectangle_rec(self.box,Color(255,0,0,self.alpha))
+            self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size) # main problem is the way it scales down is not centered
+            self.pos_y +=self.speed
+        if self.pos_y >= 1080:
+            self.alive = False
+        if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and ammo >0:
+            if check_collision_recs(player1.collisionbox,self.box) and self.alive ==True:
+                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0, 249, 249,None,10,120,1))
+                self.health -=damage
+                self.alpha -=int(255/self.max_health)
+                if self.health <= 0 or self.alpha <=30:
+                    textattack_list.append(Text(f"+{self.Tokens*mult}",400,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),100,20,255,None,10,250,1))
+                    self.alive = False
+                    self.gain_Tokens = True
+    def award_Tokens(self):
+        global textattack_list
+        global tokens
+        global mult
+        global combo
+        if self.status == True:
+            if self.alive == False:
+                if self.gain_Tokens == True:
+                    combo_timer.Reset_timer()
+                    if mult>=2:
+                        tokens +=self.Tokens*(mult-1)
+                        combo = True
+                        textattack_list.append(Text(f"X{mult} Combo",300,400,300,random.randrange(0,256),random.randrange(0,256),random.randrange(0,256),None,10,120,1))
+                    else:
+                        tokens+=self.Tokens
+                    mult +=1
                 self.status = False
 class SpawnParticles:
     def __init__(self,min_particles,max_particles,min_speed,max_speed,min_size,max_size,min_resistance,max_resistance,gravity,colors:list,posx,posy,shrink_rate,shrink_factor,cutoff,remove):
@@ -327,15 +396,17 @@ class Cooldown:
         self.frame = 0
         self.ended = False
 
-
 reloading = False
 reload_cooldown = Cooldown(reload_time)
 pumpkin_cooldown = Cooldown(pumpkin_spawn_rate)
 combo_timer = Cooldown(combo_cooldown)
 player1 = Player(50,gunsize)
 pumpkin = Pumpkin(500,0,"textureNone",50)
+specialboi = Special(500,0,"texture",80)
+special_cooldown = Cooldown(special_spawn_rate)
 #class lists
 pumpkins = []
+special = []
 textattack_list = []
 textlose_list = []
 shake_kill_list = []
@@ -378,6 +449,9 @@ while not window_should_close():
         for pumpk in pumpkins:
             pumpk.Spawn()
             pumpk.award_points()
+        for specials in special:
+            specials.Spawn()
+            specials.award_Tokens()
 
         player1.shootparticles()
         player1.draw()
@@ -391,6 +465,9 @@ while not window_should_close():
         if pumpkin_cooldown.Start_timer():
             pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,"textureNone",100))
             pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
+        if special_cooldown.Start_timer():
+            special.append(Special(random.randrange(0,1870,50),0,"textureNone",150))
+            special_cooldown = Cooldown(random.uniform(0,special_spawn_rate))
         if ammo ==0 and reloading == False:
             draw_text(f"Press R to Reload",0,400,200,WHITE)
         if reloading == True:
@@ -415,6 +492,7 @@ while not window_should_close():
         draw_text(f"spawn_rate {pumpkin_spawn_rate}",400,120,50,WHITE)
         draw_text(f"Time {game_time}",400,160,50,WHITE)
         draw_text(f"Zoom {level1cam.zoom}",400,200,50,WHITE)
+        draw_text(f"ComboTimer {combo_timer.frame}/{combo_timer.frames_to_go}",400,240,50,WHITE)
     if dead == True and game_screen == True:
         draw_text("R to Restart",20,300,250,WHITE)
         if is_key_pressed(rl.KEY_R):
