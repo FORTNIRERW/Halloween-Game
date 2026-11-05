@@ -1,5 +1,6 @@
 import raylib as rl
 from pyray import *
+from os.path import join
 import random
 particless =-1
 damage = 2
@@ -10,6 +11,7 @@ max_ammo = 200
 gunsize = 50
 pumpkin_damage=1
 max_money_gained =10
+enemydamage = 10
 mult =1
 reload_time = 2
 pumpkin_spawn_rate = 1
@@ -20,7 +22,7 @@ combo_cooldown = 10
 max_health = 20
 max_health_special = 100
 pumpkinspeed = 5
-maxspeed = 20
+maxspeed = 10
 combo = False
 dead = False
 def reset():
@@ -30,7 +32,6 @@ def reset():
     global ammo
     global max_ammo
     global gunsize
-    global pumpkin_damage
     global max_money_gained
     global mult
     global reload_time
@@ -55,7 +56,9 @@ def reset():
     global special_spawn_rate
     global max_health_special
     global special
-
+    global current_frame
+    global enemydamage
+    enemydamage = 10
     particless =-1
     damage = 2
     score = 100
@@ -65,8 +68,7 @@ def reset():
     max_tokens_gained = 1
     ammo = 200
     max_ammo = 200
-    gunsize = 50
-    pumpkin_damage=1
+    gunsize = 50 
     max_money_gained =10
     mult =1
     reload_time = 2
@@ -75,7 +77,7 @@ def reset():
     combo_cooldown = 2
     max_health = 20
     pumpkinspeed = 5
-    maxspeed = 20
+    maxspeed = 10
     combo = False
     dead = False
     pumpkins = []
@@ -87,7 +89,8 @@ def reset():
     levelup = False
     upgrade_screen = False
     game_screen = True
-
+    game_time.Reset_timer()
+    current_frame = 0
 class Pumpkin:
     def __init__(self,pos_x,pos_y,texture,size):
         global mult
@@ -112,7 +115,8 @@ class Pumpkin:
         global ammo
         global mult
         if self.alive == True:
-            draw_rectangle_rec(self.box,Color(100,50,100,self.alpha))
+            # draw_rectangle_rec(self.box,Color(0,0,0,self.alpha))
+            draw_texture_pro(self.texture[current_frame],Rectangle(0,0,self.texture[current_frame].width,self.texture[current_frame].height),self.box,Vector2(0,0),0,Color(0,0,0,self.alpha))
             self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size) # main problem is the way it scales down is not centered
             self.pos_y +=self.speed
         if self.pos_y >= 1080:
@@ -120,11 +124,11 @@ class Pumpkin:
             self.alive = False
         if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and ammo >0:
             if check_collision_recs(player1.collisionbox,self.box) and self.alive ==True:
-                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),253, 249, 0,None,10,120,1))
+                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0, 0, 0,MatchWorld,10,120,1))
                 self.health -=damage
                 self.alpha -=int(255/self.max_health)
                 if self.health <= 0 or self.alpha <=30:
-                    textattack_list.append(Text(f"+${self.points*mult}",100,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0,255,0,None,10,120,1))
+                    textattack_list.append(Text(f"+{self.points*mult}",50,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0,255,0,MatchWorld,10,120,1))
                     self.alive = False
                     self.gain_points = True
     def award_points(self):
@@ -139,14 +143,14 @@ class Pumpkin:
                     if mult>=2:
                         score +=self.points*(mult-1)
                         combo = True
-                        textattack_list.append(Text(f"X{mult} Combo",300,400,300,random.randrange(0,256),random.randrange(0,256),random.randrange(0,256),None,10,120,1))
+                        textattack_list.append(Text(f"X{mult} Combo",150,0,900,random.randrange(100,256),random.randrange(100,256),random.randrange(100,256),MatchWorld,10,120,3))
                     else:
                         score+=self.points
                     mult +=1
                      #use the floating thingy to make the score float up &&& add the particles
                 else:
-                    score -=10 # use the floating and shake thingy
-                    textattack_list.append(Text(f"-$10",250,random.randrange(0,1620),random.randrange(0,680),255, 0, 0,None,10,120,1))
+                    score -=enemydamage # use the floating and shake thingy
+                    textattack_list.append(Text(f"-{enemydamage}",50,random.randrange(0,1620),random.randrange(0,680),255, 0, 0,MatchWorld,10,120,1))
                 self.status = False
 class Special:
     def __init__(self,pos_x,pos_y,texture,size):
@@ -171,18 +175,18 @@ class Special:
         global ammo
         global mult
         if self.alive == True:
-            draw_rectangle_rec(self.box,Color(255,0,0,self.alpha))
+            draw_texture_pro(Enemy2Animation[current_frame],Rectangle(0,0,Enemy1.width,Enemy1.height),self.box,Vector2(0,0),0,Color(0,0,0,self.alpha))
             self.box = Rectangle(self.pos_x, self.pos_y,self.size,self.size) # main problem is the way it scales down is not centered
             self.pos_y +=self.speed
         if self.pos_y >= 1080:
             self.alive = False
         if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and ammo >0:
             if check_collision_recs(player1.collisionbox,self.box) and self.alive ==True:
-                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0, 249, 249,None,10,120,1))
+                textattack_list.append(Text(f"-{damage}",40,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),0, 0, 0,MatchWorld,10,120,1))
                 self.health -=damage
                 self.alpha -=int(255/self.max_health)
                 if self.health <= 0 or self.alpha <=30:
-                    textattack_list.append(Text(f"+{self.Tokens*mult}",400,int(player1.position.x)+random.randrange(-20,20),int(player1.position.y),100,20,255,None,10,250,1))
+                    textattack_list.append(Text(f"+{self.Tokens*mult}",500,350,600,0,255,40,MatchWorld,10,250,1))
                     self.alive = False
                     self.gain_Tokens = True
     def award_Tokens(self):
@@ -190,6 +194,7 @@ class Special:
         global tokens
         global mult
         global combo
+        global score
         if self.status == True:
             if self.alive == False:
                 if self.gain_Tokens == True:
@@ -197,10 +202,13 @@ class Special:
                     if mult>=2:
                         tokens +=self.Tokens*(mult-1)
                         combo = True
-                        textattack_list.append(Text(f"X{mult} Combo",300,400,300,random.randrange(0,256),random.randrange(0,256),random.randrange(0,256),None,10,120,1))
+                        textattack_list.append(Text(f"X{mult} Combo",150,0,900,random.randrange(100,256),random.randrange(100,256),random.randrange(100,256),MatchWorld,10,120,3))
                     else:
                         tokens+=self.Tokens
                     mult +=1
+                else:
+                    score -=enemydamage # use the floating and shake thingy
+                    textattack_list.append(Text(f"-{enemydamage}",50,random.randrange(0,1620),random.randrange(0,680),255, 0, 0,MatchWorld,10,120,1))
                 self.status = False
 class SpawnParticles:
     def __init__(self,min_particles,max_particles,min_speed,max_speed,min_size,max_size,min_resistance,max_resistance,gravity,colors:list,posx,posy,shrink_rate,shrink_factor,cutoff,remove):
@@ -284,7 +292,18 @@ class Text:
         self.posy = posy
         self.posx = posx
     def FloatTextex(self):
-        draw_text_ex(self.font,str(self.text),Vector2(self.posx,self.posy),self.size,self.spacing,self.color)
+        if self.frame <= self.time:
+            draw_text_ex(self.font,str(self.text),Vector2(self.posx,self.posy),self.size,self.spacing,self.color)
+        
+        else:
+            return
+        if self.opacity <=1:
+            self.opacity = 0
+        self.color = Color(self.r,self.g,self.b,self.opacity)
+        self.frame +=1
+        if self.frame % self.slowness ==0:
+            self.opacity -=5
+            self.posy -= int(5)
     def FloatText(self):
         if self.frame <= self.time:
             draw_text(str(self.text),self.posx,self.posy,self.size,self.color)
@@ -331,7 +350,7 @@ class Shake:
                     self.currentvalue = self.original_value
                     self.shake = False
 class Player:
-    def __init__(self,size,gunsize):
+    def __init__(self,size,gunsize,texture):
         self.gunsize = gunsize
         self.position = get_mouse_position()
         self.size = size
@@ -343,11 +362,12 @@ class Player:
         self.originalsize = size
         self.rotationfactor = 2
         self.orioginalrotation = 0
+        self.texture = texture
     def draw(self):
         self.position = get_mouse_position()
         self.collisionbox = Rectangle(self.position.x-self.size_box/2,self.position.y-self.size_box/2,self.size_box,self.size_box)
-        draw_rectangle_pro(Rectangle(self.position.x,self.position.y,self.size,self.size),Vector2(self.size/2,self.size/2),self.rotation,RED)
-        draw_rectangle_rec(self.collisionbox,BLUE)
+        draw_texture_pro(crosshairAnimation[current_frame],Rectangle(0,0,crosshairAnimation[1].width,crosshairAnimation[1].height),Rectangle((self.position.x-self.size_box/2)+5,(self.position.y-self.size_box/2)+5,self.size,self.size),Vector2(self.size/2,self.size/2),self.rotation,BLACK)
+        # draw_rectangle_rec(self.collisionbox,BLUE) #this is the hitbox
         self.rotation+=2
     def shoot(self):
         self.collisionbox = Rectangle(self.position.x,self.position.y,self.size_box,self.size_box)
@@ -366,7 +386,7 @@ class Player:
         global reloading
         if is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and ammo >0:
             ammo -=1
-            particles_shoot_list.append(SpawnParticles(2,10,1,2,4,5,1,10,0,[YELLOW,WHITE],player1.position.x,player1.position.y,0.2,0.2,1,1))
+            particles_shoot_list.append(SpawnParticles(2,10,1,2,4,5,1,10,0,[BLACK,BLACK,BLACK,WHITE],player1.position.x,player1.position.y,0.2,0.2,1,1))
             particless+=1
             particles_shoot_list[particless].Randomize()
         for particle in particles_shoot_list:
@@ -396,12 +416,27 @@ class Cooldown:
         self.frame = 0
         self.ended = False
 
+
+init_window(1280,720,"BOB")
+MomFont = load_font((join("Halloween-Game","Assets","Fonts","Momfont.ttf")))
+MatchWorld = load_font((join("Halloween-Game","Assets","Fonts","Matcha World.ttf")))
+Crosshair1 = load_texture((join("Halloween-Game","Assets","Images","Crosshair","Crosshair1.png")))
+Crosshair2 = load_texture((join("Halloween-Game","Assets","Images","Crosshair","Crosshair2.png")))
+Enemy1 = load_texture((join("Halloween-Game","Assets","Images","Enemy1","Enemy1.png")))
+Enemy2 = load_texture((join("Halloween-Game","Assets","Images","Enemy1","Enemy2.png")))
+AnotherEnemy1 = load_texture((join("Halloween-Game","Assets","Images","enemy2","AnotherEnemy1.png")))
+AnotherEnemy2 = load_texture((join("Halloween-Game","Assets","Images","enemy2","AnotherEnemy2.png")))
+
+animation_cooldown = Cooldown(40)
+crosshairAnimation = [Crosshair1,Crosshair2]
+Enemy1Animation = [Enemy1,Enemy2]
+Enemy2Animation = [AnotherEnemy1,AnotherEnemy2]
 reloading = False
 reload_cooldown = Cooldown(reload_time)
 pumpkin_cooldown = Cooldown(pumpkin_spawn_rate)
 combo_timer = Cooldown(combo_cooldown)
-player1 = Player(50,gunsize)
-pumpkin = Pumpkin(500,0,"textureNone",50)
+player1 = Player(50,gunsize,Crosshair1)
+pumpkin = Pumpkin(500,0,Enemy1,50)
 specialboi = Special(500,0,"texture",80)
 special_cooldown = Cooldown(special_spawn_rate)
 #class lists
@@ -417,7 +452,7 @@ particles_destroy_list = []
 #class Structures
 kill:Shake = Shake(10,11,20,30,5,0,1)
 particle_hit:SpawnParticles = SpawnParticles(5,7,1,2,3,7,1,10,0,[WHITE,ORANGE],player1.position.x,player1.position.y,1,1,1,1)
-particle_shoot:SpawnParticles = SpawnParticles(4,5,1,2,3,7,1,10,0,[YELLOW,WHITE],player1.position.x,player1.position.y,1,1,1,1)
+particle_shoot:SpawnParticles = SpawnParticles(4,5,1,2,3,7,1,10,0,[BLACK,BLACK,BLACK,WHITE],player1.position.x,player1.position.y,1,1,1,1)
 particle_destroy:SpawnParticles = SpawnParticles(100,300,10,40,3,7,1,10,0,[ORANGE,WHITE,Color(222, 116, 22,255),Color(255, 178, 0,255)],player1.position.x,player1.position.y,1,1,1,1)
 level1cam = Camera2D()
 level1cam.offset=(Vector2(0,0))
@@ -427,25 +462,52 @@ level1cam.target = Vector2(0,0)
 levelup = False
 upgrade_screen = False
 game_screen = True
-init_window(1280,720,"BOB")
+game_time = Cooldown(30)
+current_frame = 0
 toggle_fullscreen()
 set_target_fps(60)
 hide_cursor()
 while not window_should_close():
-    game_time = round(get_time(),1)
-    if game_time%10 == 0 and levelup == False:
-        levelup = True
-        level+=1
-        pumpkin_spawn_rate/=1.1
-    if not game_time%10==0:
-        levelup = False
+
 
     
 
     begin_drawing()
     begin_mode_2d(level1cam)
-    clear_background(BLACK)
+    clear_background(RAYWHITE)
     if game_screen == True and dead == False:
+        animation_cooldown.Start_timer()
+        if animation_cooldown.frame >20:
+            current_frame = 1
+            if animation_cooldown.frame >= 40:
+                animation_cooldown.Reset_timer()
+        else:
+            current_frame = 0
+
+        if game_time.Start_timer() and levelup == False:
+# game_time = round(get_time(),1)
+            levelup = True
+            level+=1
+            pumpkin_spawn_rate/=1.1
+            negative_effect = random.randrange(0,1)
+            game_screen = False
+            if negative_effect == 1:
+                max_health += int(max_health/2)
+                max_health_special +=int(max_health_special/2)
+                print("more health")
+            elif negative_effect == 0:
+                enemydamage +=int(enemydamage/2)
+                print(enemydamage)
+                print("more damage")
+            upgrade_screen = True
+            game_time.Reset_timer()
+
+                
+            
+        if not game_time.Start_timer():
+            levelup = False
+
+
         for pumpk in pumpkins:
             pumpk.Spawn()
             pumpk.award_points()
@@ -457,21 +519,21 @@ while not window_should_close():
         player1.draw()
         player1.shoot()
         for i in range(0,len(textattack_list)):
-            textattack_list[i].FloatText() #this draws items that are within the list
+            textattack_list[i].FloatTextex() #this draws items that are within the list
             if textattack_list[i].opacity <=0:
                 textattack_list[i]
-        draw_text(f"${int(score)} Money",400,0,40,GREEN)
-        draw_text(f"{int(ammo)} Ammo",400,40,40,YELLOW)
+        draw_text(f"${int(score)} Money",400,0,40,BLACK)
+        draw_text(f"{int(ammo)} Ammo",400,40,40,BLACK)
         if pumpkin_cooldown.Start_timer():
-            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,"textureNone",100))
+            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,Enemy2Animation,100))# CHANGED THIS
             pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
         if special_cooldown.Start_timer():
-            special.append(Special(random.randrange(0,1870,50),0,"textureNone",150))
+            special.append(Special(random.randrange(0,1870,50),0,Enemy2Animation,150)) # CHANGED THIS
             special_cooldown = Cooldown(random.uniform(0,special_spawn_rate))
         if ammo ==0 and reloading == False:
-            draw_text(f"Press R to Reload",0,400,200,WHITE)
+            draw_text(f"Press R to Reload",0,400,200,BLACK)
         if reloading == True:
-            draw_text(f"Reloading........",0,400,200,WHITE)
+            draw_text(f"Reloading........",0,400,200,BLACK)
             reload_cooldown.Start_timer()
             ammo = 0
             if reload_cooldown.Start_timer():
@@ -488,15 +550,28 @@ while not window_should_close():
                 combo = False
         if score <= 0:
             dead = True
-        draw_text(f"Level {level}",400,80,50,WHITE)
-        draw_text(f"spawn_rate {pumpkin_spawn_rate}",400,120,50,WHITE)
-        draw_text(f"Time {game_time}",400,160,50,WHITE)
-        draw_text(f"Zoom {level1cam.zoom}",400,200,50,WHITE)
-        draw_text(f"ComboTimer {combo_timer.frame}/{combo_timer.frames_to_go}",400,240,50,WHITE)
+        draw_text_ex(MatchWorld,f"Level {level}",Vector2(400,80),50,10,BLACK)
+        draw_text_ex(MatchWorld,f"spawn_rate {pumpkin_spawn_rate}",Vector2(400,120),50,10,BLACK)
+        draw_text(f"Time {game_time.frame}/{game_time.frames_to_go}",400,160,50,BLACK)
+        draw_text(f"Zoom {level1cam.zoom}",400,200,50,BLACK)
+        draw_text(f"ComboTimer {combo_timer.frame}/{combo_timer.frames_to_go}",400,240,50,BLACK)
+        draw_text(f"current_frame = {current_frame} timer = {animation_cooldown.frame}",400,280,50,BLACK)
     if dead == True and game_screen == True:
-        draw_text("R to Restart",20,300,250,WHITE)
+        draw_text("R to Restart",20,300,250,BLACK)
         if is_key_pressed(rl.KEY_R):
             reset()
+    if upgrade_screen == True:
+        draw_text("upgrade 1",100,100,300,BLACK)
+        draw_text("upgrade 2",100,300,300,BLACK)
+        draw_text("upgrade 3",100,500,300,BLACK)
+        if is_key_pressed(rl.KEY_V):
+            upgrade_screen = False
+            game_screen = True
+            game_time.Reset_timer()
+            pumpkins = []
+            special = []
+            textattack_list = []
+            mult = 1
     end_mode_2d()
     end_drawing()
 close_window()
