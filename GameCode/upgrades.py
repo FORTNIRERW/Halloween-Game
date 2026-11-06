@@ -1,69 +1,95 @@
 import raylib as rl
-from pyray import*
+from pyray import *
+from os.path import join
+from enum import Enum, auto
 
-player = get_mouse_position()
-size = 2
+class screen(Enum): # this is so cool
+    PLAY = auto()
+    LOSE = auto()
+    MENU = auto()
+    STAT = auto()
+    UPGRADE = auto()
+currentScreen = screen.MENU
+
+
+
 class Button:
-    def __init__(self,posx,posy,width,height,r,g,b,opacity,text):
+    def __init__(self,texture,posx,posy,size,tint,text):
+        self.texture = texture
         self.posx = posx
         self.posy = posy
-        self.width = width
-        self.height = height
-        self.maxheight = height +100
-        self.maxwidth = width +100
-        self.positionmax = posx -self.width/8
-        self.positionmay = posy -self.height/2
-        self.r = r
-        self.g = g
-        self.b = b
-        self.opacity = opacity
-        self.hover = False
-        self.collider = Rectangle(self.posx,self.posy,self.width,self.height)
-        self.text = text
-    def Draw(self):
-        if self.hover == True:
-            self.collider.height = self.maxheight
-            self.collider.width = self.maxwidth
-            self.collider.x = self.positionmax
-            self.collider.y = self.positionmay
-            draw_rectangle_rec(self.collider,Color(self.r,self.g,200,self.opacity))
-        else:
-            self.collider = Rectangle(self.posx,self.posy,self.width,self.height)
-            draw_rectangle_rec(self.collider,Color(self.r,self.g,self.b,self.opacity))
-        draw_text(f"{self.text}",self.posx,self.posy,self.height,WHITE)
-    def check_hover(self,playerx,playery,size):
-        self.playerx = playerx
-        self.playery = playery
+        self.originalx = posx
+        self.originaly = posy
         self.size = size
-        self.player_collision_box = Rectangle(self.playerx,self.playery,self.size,self.size)
-        if check_collision_recs(self.collider,self.player_collision_box):
-            self.hover = True
+        self.max_size = self.size*2
+        self.max_posy = self.posx-int((buttonoutline.height/2)*self.size)
+        self.max_posx = self.posy - int((buttonoutline.width/2)*self.size)
+        self.tint = tint
+        self.text = text
+        self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
+    def Draw(self):
+        draw_texture_ex(self.texture,Vector2(self.posx,self.posy),0,self.size,self.tint)
+        # draw_rectangle_rec(self.collision,RED)
+    def Draw_text(self):
+        draw_text(self.text,self.posx+25,self.posy+20,int(self.size*300),self.tint)
+    def Hover(self):
+        if check_collision_recs(self.collision,mouse_rectangle):
+            self.tint = GRAY
+            self.size = self.max_size
+            self.posx = self.originalx-int(self.size*buttonoutline.width/4)
+            self.posy = self.originaly-int(self.size*buttonoutline.height/4)
+            self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
         else:
-            self.hover = False
-    def check_click(self):
-        if check_collision_recs(self.collider,self.player_collision_box) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
-            return True # replace with what you want to be here
+            self.size = self.max_size/2
+            self.tint = BLACK
+            self.posy = self.originaly
+            self.posx = self.originalx
+            self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
+    def Check_click(self):
+        if check_collision_recs(self.collision,mouse_rectangle) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
+            return True
 
-skibidi_button = Button(400,300,300,100,240,210,50,255,"skibidi")
-play_button = Button(400,100,300,100,240,210,50,255,"play")
-leave_button = Button(400,500,300,100,240,210,50,255,"leave")
-init_window(1280,720,"BUTTON TEST")
+
+
+
+init_window(1280,720,"HopeFully these stupid buttons work")
+
+buttonoutline = load_texture((join("Halloween-Game","Assets","Images","BackgroundElements","Buttons1.png")))
+button_play = Button(buttonoutline,400,400,0.17,BLACK,"play")
+button_leave = Button(buttonoutline,400,100,0.17,BLACK,"leave")
+button_Menu = Button(buttonoutline,400,100,0.17,BLACK,"Back")
 while not window_should_close():
-    player = get_mouse_position()
+    p = get_mouse_position()
+    mouse_rectangle = Rectangle(p.x,p.y,20,20)
     begin_drawing()
-    clear_background(BLACK)
-    play_button.Draw()
-    play_button.check_hover(player.x,player.y,2)
-    if play_button.check_click():
-        print("Play")
-    skibidi_button.Draw()
-    skibidi_button.check_hover(player.x,player.y,2)
-    if skibidi_button.check_click():
-        print("Skibidi")
-    leave_button.Draw()
-    leave_button.check_hover(player.x,player.y,2)
-    if leave_button.check_click():
-        print("leave")
+    clear_background(WHITE)
+    if currentScreen == screen.MENU:
+        draw_rectangle_rec(mouse_rectangle,BLUE)
+        button_play.Draw()
+        button_play.Draw_text()
+        button_play.Hover()
 
+        if button_play.Check_click():
+            currentScreen = screen.PLAY
+        button_leave.Draw()
+        button_leave.Draw_text()
+        button_leave.Hover()
+        if button_leave.Check_click():
+            currentScreen = screen.LOSE
+    elif currentScreen ==screen.LOSE:
+        draw_text("You Lose",400,400,100,BLACK)
+        button_Menu.Draw()
+        button_Menu.Draw_text()
+        button_Menu.Hover()
+        if button_Menu.Check_click():
+            currentScreen = screen.MENU
+    elif currentScreen == screen.PLAY:
+        draw_text("Your Playing",400,400,100,BLACK)
+        button_Menu.Draw()
+        button_Menu.Draw_text()
+        button_Menu.Hover()
+        if button_Menu.Check_click():
+            currentScreen = screen.MENU
+    print(currentScreen)
     end_drawing()
 close_window()

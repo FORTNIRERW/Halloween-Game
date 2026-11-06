@@ -136,6 +136,7 @@ class Pumpkin:
         global score
         global mult
         global combo
+        global particless
         if self.status == True:
             if self.alive == False:
                 if self.gain_points == True:
@@ -489,7 +490,7 @@ while not window_should_close():
             levelup = True
             level+=1
             pumpkin_spawn_rate/=1.1
-            negative_effect = random.randrange(0,1)
+            negative_effect = random.randrange(0,2)
             game_screen = False
             if negative_effect == 1:
                 max_health += int(max_health/2)
@@ -525,7 +526,7 @@ while not window_should_close():
         draw_text(f"${int(score)} Money",400,0,40,BLACK)
         draw_text(f"{int(ammo)} Ammo",400,40,40,BLACK)
         if pumpkin_cooldown.Start_timer():
-            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,Enemy2Animation,100))# CHANGED THIS
+            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,Enemy1Animation,100))# CHANGED THIS
             pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
         if special_cooldown.Start_timer():
             special.append(Special(random.randrange(0,1870,50),0,Enemy2Animation,150)) # CHANGED THIS
