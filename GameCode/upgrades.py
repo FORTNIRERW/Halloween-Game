@@ -58,7 +58,9 @@ buttonoutline = load_texture((join("Halloween-Game","Assets","Images","Backgroun
 button_play = Button(buttonoutline,400,400,0.17,BLACK,"play")
 button_leave = Button(buttonoutline,400,100,0.17,BLACK,"leave")
 button_Menu = Button(buttonoutline,400,100,0.17,BLACK,"Back")
+button_stats = Button(buttonoutline,400,250,0.17,BLACK,"Stats")
 while not window_should_close():
+
     p = get_mouse_position()
     mouse_rectangle = Rectangle(p.x,p.y,20,20)
     begin_drawing()
@@ -68,9 +70,16 @@ while not window_should_close():
         button_play.Draw()
         button_play.Draw_text()
         button_play.Hover()
-
         if button_play.Check_click():
+            print("sigma")
             currentScreen = screen.PLAY
+        if currentScreen == screen.MENU:
+            draw_rectangle_rec(mouse_rectangle,BLUE)
+            button_stats.Draw()
+            button_stats.Draw_text()
+            button_stats.Hover()
+        if button_stats.Check_click():
+            currentScreen = screen.STAT
         button_leave.Draw()
         button_leave.Draw_text()
         button_leave.Hover()
@@ -90,6 +99,12 @@ while not window_should_close():
         button_Menu.Hover()
         if button_Menu.Check_click():
             currentScreen = screen.MENU
-    print(currentScreen)
+    elif currentScreen == screen.STAT:
+        draw_text("HIGHSCORE 100",400,400,100,BLACK)
+        button_Menu.Draw()
+        button_Menu.Draw_text()
+        button_Menu.Hover()
+        if button_Menu.Check_click():
+            currentScreen = screen.MENU
     end_drawing()
 close_window()

@@ -1,16 +1,17 @@
 import raylib as rl
+from enum import Enum,auto
 from pyray import *
 from os.path import join
 import random
 particless =-1
 damage = 2
-score = 100
+score = 50
 tokens = 0
-ammo = 200
-max_ammo = 200
+ammo = 150
+max_ammo = 150
 gunsize = 50
 pumpkin_damage=1
-max_money_gained =10
+max_money_gained =5
 enemydamage = 10
 mult =1
 reload_time = 2
@@ -18,13 +19,20 @@ pumpkin_spawn_rate = 1
 special_spawn_rate =20
 max_tokens_gained = 1
 level = 1
-combo_cooldown = 10
+combo_cooldown = 1
 max_health = 20
 max_health_special = 100
 pumpkinspeed = 5
 maxspeed = 10
 combo = False
 dead = False
+class screen(Enum): # this is so cool
+    PLAY = auto()
+    LOSE = auto()
+    MENU = auto()
+    STATS = auto()
+    UPGRADE = auto()
+currentScreen = screen.MENU
 def reset():
     global particless
     global damage
@@ -49,8 +57,6 @@ def reset():
     global particles_shoot_list
     global particles_destroy_list
     global levelup
-    global upgrade_screen
-    global game_screen
     global tokens
     global max_tokens_gained
     global special_spawn_rate
@@ -58,28 +64,31 @@ def reset():
     global special
     global current_frame
     global enemydamage
+    global currentScreen
+    global reloading
     enemydamage = 10
     particless =-1
     damage = 2
-    score = 100
+    score = 50
     tokens = 0
     special_spawn_rate = 20
     max_health_special =100
     max_tokens_gained = 1
-    ammo = 200
-    max_ammo = 200
+    ammo = 150
+    max_ammo = 150
     gunsize = 50 
-    max_money_gained =10
+    max_money_gained =5
     mult =1
     reload_time = 2
     pumpkin_spawn_rate = 1
     level = 1
-    combo_cooldown = 2
+    combo_cooldown = 1
     max_health = 20
     pumpkinspeed = 5
     maxspeed = 10
     combo = False
     dead = False
+    reloading = False
     pumpkins = []
     special = []
     textattack_list = []
@@ -87,8 +96,6 @@ def reset():
     particles_shoot_list = []
     particles_destroy_list = []
     levelup = False
-    upgrade_screen = False
-    game_screen = True
     game_time.Reset_timer()
     current_frame = 0
 class Pumpkin:
@@ -416,9 +423,44 @@ class Cooldown:
         self.started = False
         self.frame = 0
         self.ended = False
+class Button:
+    def __init__(self,texture,posx,posy,size,tint,text):
+        self.texture = texture
+        self.posx = posx
+        self.posy = posy
+        self.originalx = posx
+        self.originaly = posy
+        self.size = size
+        self.max_size = self.size*2
+        self.max_posy = self.posx-int((buttonoutline.height/2)*self.size)
+        self.max_posx = self.posy - int((buttonoutline.width/2)*self.size)
+        self.tint = tint
+        self.text = text
+        self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
+    def Draw(self):
+        draw_texture_ex(self.texture,Vector2(self.posx,self.posy),0,self.size,self.tint)
+        # draw_rectangle_rec(self.collision,RED)
+    def Draw_text(self):
+        draw_text(self.text,self.posx+25,self.posy+20,int(self.size*300),self.tint)
+    def Hover(self):
+        if check_collision_recs(self.collision,mouse_box):
+            self.tint = GRAY
+            self.size = self.max_size
+            self.posx = self.originalx-int(self.size*buttonoutline.width/4)
+            self.posy = self.originaly-int(self.size*buttonoutline.height/4)
+            self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
+        else:
+            self.size = self.max_size/2
+            self.tint = BLACK
+            self.posy = self.originaly
+            self.posx = self.originalx
+            self.collision = Rectangle(self.posx,self.posy,buttonoutline.width*self.size,buttonoutline.height*self.size)
+    def Check_click(self):
+        if check_collision_recs(self.collision,mouse_box) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
+            return True
 
-
-init_window(1280,720,"BOB")
+init_window(1800,980,"BOB")
+combo_textures = []
 MomFont = load_font((join("Halloween-Game","Assets","Fonts","Momfont.ttf")))
 MatchWorld = load_font((join("Halloween-Game","Assets","Fonts","Matcha World.ttf")))
 Crosshair1 = load_texture((join("Halloween-Game","Assets","Images","Crosshair","Crosshair1.png")))
@@ -427,8 +469,17 @@ Enemy1 = load_texture((join("Halloween-Game","Assets","Images","Enemy1","Enemy1.
 Enemy2 = load_texture((join("Halloween-Game","Assets","Images","Enemy1","Enemy2.png")))
 AnotherEnemy1 = load_texture((join("Halloween-Game","Assets","Images","enemy2","AnotherEnemy1.png")))
 AnotherEnemy2 = load_texture((join("Halloween-Game","Assets","Images","enemy2","AnotherEnemy2.png")))
-
+buttonoutline = load_texture((join("Halloween-Game","Assets","Images","BackgroundElements","Buttons1.png")))
+backgroundMain = load_texture((join("Halloween-Game","Assets","Images","BackgroundElements","Background1.png")))
+for i in range(1,6):
+    combo_textures.append(load_texture((join("Halloween-Game","Assets","Images","BackgroundElements",f"ComboOutlineBetter{i}.png"))))
 animation_cooldown = Cooldown(40)
+combo_color_speed = 0.6
+combo_color_cooldown = Cooldown(combo_color_speed)
+combor = random.randrange(100,256)
+combob = random.randrange(100,256)
+combog = random.randrange(100,256)
+comboa = 0
 crosshairAnimation = [Crosshair1,Crosshair2]
 Enemy1Animation = [Enemy1,Enemy2]
 Enemy2Animation = [AnotherEnemy1,AnotherEnemy2]
@@ -455,28 +506,31 @@ kill:Shake = Shake(10,11,20,30,5,0,1)
 particle_hit:SpawnParticles = SpawnParticles(5,7,1,2,3,7,1,10,0,[WHITE,ORANGE],player1.position.x,player1.position.y,1,1,1,1)
 particle_shoot:SpawnParticles = SpawnParticles(4,5,1,2,3,7,1,10,0,[BLACK,BLACK,BLACK,WHITE],player1.position.x,player1.position.y,1,1,1,1)
 particle_destroy:SpawnParticles = SpawnParticles(100,300,10,40,3,7,1,10,0,[ORANGE,WHITE,Color(222, 116, 22,255),Color(255, 178, 0,255)],player1.position.x,player1.position.y,1,1,1,1)
+button_play = Button(buttonoutline,600,100,0.25,BLACK,"play")
+button_leave = Button(buttonoutline,600,400,0.25,BLACK,"leave")
+button_Menu = Button(buttonoutline,600,400,0.25,BLACK,"Back")
+button_stats = Button(buttonoutline,600,700,0.25,BLACK,"Stats")
 level1cam = Camera2D()
 level1cam.offset=(Vector2(0,0))
 level1cam.zoom=1
 level1cam.rotation=0
 level1cam.target = Vector2(0,0)
 levelup = False
-upgrade_screen = False
-game_screen = True
 game_time = Cooldown(30)
 current_frame = 0
-toggle_fullscreen()
 set_target_fps(60)
 hide_cursor()
 while not window_should_close():
-
-
+    mousep = get_mouse_position()
+    mouse_box = Rectangle(mousep.x-2,mousep.y-2,5,5)
     
 
     begin_drawing()
     begin_mode_2d(level1cam)
     clear_background(RAYWHITE)
-    if game_screen == True and dead == False:
+    draw_texture_ex(backgroundMain,Vector2(0,0),0,1,WHITE)
+    if currentScreen == screen.PLAY and dead == False:
+        hide_cursor()
         animation_cooldown.Start_timer()
         if animation_cooldown.frame >20:
             current_frame = 1
@@ -491,7 +545,6 @@ while not window_should_close():
             level+=1
             pumpkin_spawn_rate/=1.1
             negative_effect = random.randrange(0,2)
-            game_screen = False
             if negative_effect == 1:
                 max_health += int(max_health/2)
                 max_health_special +=int(max_health_special/2)
@@ -500,7 +553,7 @@ while not window_should_close():
                 enemydamage +=int(enemydamage/2)
                 print(enemydamage)
                 print("more damage")
-            upgrade_screen = True
+            currentScreen = screen.UPGRADE
             game_time.Reset_timer()
 
                 
@@ -523,18 +576,16 @@ while not window_should_close():
             textattack_list[i].FloatTextex() #this draws items that are within the list
             if textattack_list[i].opacity <=0:
                 textattack_list[i]
-        draw_text(f"${int(score)} Money",400,0,40,BLACK)
-        draw_text(f"{int(ammo)} Ammo",400,40,40,BLACK)
         if pumpkin_cooldown.Start_timer():
-            pumpkins.append(Pumpkin(random.randrange(0,1870,50),0,Enemy1Animation,100))# CHANGED THIS
+            pumpkins.append(Pumpkin(random.randrange(300,1800,50),0,Enemy1Animation,100))# CHANGED THIS
             pumpkin_cooldown = Cooldown(random.uniform(0,pumpkin_spawn_rate))
         if special_cooldown.Start_timer():
-            special.append(Special(random.randrange(0,1870,50),0,Enemy2Animation,150)) # CHANGED THIS
+            special.append(Special(random.randrange(300,1800,50),0,Enemy2Animation,150)) # CHANGED THIS
             special_cooldown = Cooldown(random.uniform(0,special_spawn_rate))
         if ammo ==0 and reloading == False:
-            draw_text(f"Press R to Reload",0,400,200,BLACK)
+            draw_text_ex(MatchWorld,f"R to Reload",Vector2(200,400),200,10,BLACK)
         if reloading == True:
-            draw_text(f"Reloading........",0,400,200,BLACK)
+            draw_text_ex(MatchWorld,f"Reloading........",Vector2(150,400),200,10,BLACK)
             reload_cooldown.Start_timer()
             ammo = 0
             if reload_cooldown.Start_timer():
@@ -543,7 +594,20 @@ while not window_should_close():
                 ammo = max_ammo
                 reload_cooldown.Reset_timer()
                 reloading = False
+        draw_texture_ex(combo_textures[current_frame],Vector2(-10,-10),0,1.02,Color(combor,combog,combob,comboa))
+        if not combo:
+            if comboa >1:
+                comboa -=15
         if combo == True:
+            if comboa <255:
+                comboa +=15
+                combo_color_cooldown = Cooldown(combo_color_speed)
+            if combo_color_cooldown.Start_timer():
+                combo_color_speed/=1.4
+                combor = random.randrange(100,256)
+                combob = random.randrange(100,256)
+                combog = random.randrange(100,256)
+                combo_color_cooldown.Reset_timer()
             combo_timer.Start_timer()
             if combo_timer.Start_timer() == True:
                 combo_timer.Reset_timer()
@@ -551,28 +615,47 @@ while not window_should_close():
                 combo = False
         if score <= 0:
             dead = True
+            currentScreen = screen.LOSE
         draw_text_ex(MatchWorld,f"Level {level}",Vector2(400,80),50,10,BLACK)
-        draw_text_ex(MatchWorld,f"spawn_rate {pumpkin_spawn_rate}",Vector2(400,120),50,10,BLACK)
-        draw_text(f"Time {game_time.frame}/{game_time.frames_to_go}",400,160,50,BLACK)
-        draw_text(f"Zoom {level1cam.zoom}",400,200,50,BLACK)
-        draw_text(f"ComboTimer {combo_timer.frame}/{combo_timer.frames_to_go}",400,240,50,BLACK)
-        draw_text(f"current_frame = {current_frame} timer = {animation_cooldown.frame}",400,280,50,BLACK)
-    if dead == True and game_screen == True:
-        draw_text("R to Restart",20,300,250,BLACK)
-        if is_key_pressed(rl.KEY_R):
+        draw_text_ex(MatchWorld,f"spawn_rate {int(pumpkin_spawn_rate)}",Vector2(400,120),50,10,BLACK)
+        draw_text_ex(MatchWorld,f"Time {int(game_time.frame/60)}/{int(game_time.frames_to_go/60)}",Vector2(400,160),50,10,BLACK)
+        # draw_text_ex(MatchWorld,f"ComboTimer {combo_timer.frame}/{combo_timer.frames_to_go}",Vector2(400,200),50,10,BLACK)
+        # draw_text_ex(MatchWorld,f"current_frame = {current_frame} timer = {animation_cooldown.frame}",Vector2(400,240),50,10,BLACK)
+        draw_text_ex(MatchWorld,f"${int(score)} Money",Vector2(400,0),50,10,BLACK)
+        draw_text_ex(MatchWorld,f"{int(ammo)} Ammo",Vector2(400,40),50,10,BLACK)
+        # draw_text_ex(MatchWorld,f"{combo_color_speed} ComboCooldown",Vector2(400,280),50,10,BLACK)
+    if currentScreen == screen.LOSE:
+        show_cursor()
+        button_Menu.Draw()
+        button_Menu.Draw_text()
+        button_Menu.Hover()
+        if button_Menu.Check_click():
+            currentScreen = screen.MENU
             reset()
-    if upgrade_screen == True:
+    if currentScreen == screen.UPGRADE:
         draw_text("upgrade 1",100,100,300,BLACK)
         draw_text("upgrade 2",100,300,300,BLACK)
         draw_text("upgrade 3",100,500,300,BLACK)
         if is_key_pressed(rl.KEY_V):
-            upgrade_screen = False
-            game_screen = True
+            currentScreen = screen.PLAY
             game_time.Reset_timer()
-            pumpkins = []
-            special = []
             textattack_list = []
-            mult = 1
+    if currentScreen == screen.MENU:
+        show_cursor()
+        button_play.Draw()
+        button_play.Draw_text()
+        button_play.Hover()
+        if button_play.Check_click():
+            print("sigma")
+            currentScreen = screen.PLAY
+        button_stats.Draw()
+        button_stats.Draw_text()
+        button_stats.Hover()
+        if button_stats.Check_click():
+            currentScreen = screen.STATS
+        button_leave.Draw()
+        button_leave.Draw_text()
+        button_leave.Hover()
     end_mode_2d()
     end_drawing()
 close_window()
