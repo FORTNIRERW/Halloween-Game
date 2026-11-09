@@ -459,7 +459,7 @@ class Button:
         if check_collision_recs(self.collision,mouse_box) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
             return True
 
-init_window(1800,980,"BOB")
+init_window(1800,1000,"BOB")
 combo_textures = []
 MomFont = load_font((join("Halloween-Game","Assets","Fonts","Momfont.ttf")))
 MatchWorld = load_font((join("Halloween-Game","Assets","Fonts","Matcha World.ttf")))
@@ -519,7 +519,7 @@ levelup = False
 game_time = Cooldown(30)
 current_frame = 0
 set_target_fps(60)
-hide_cursor()
+show_cursor()
 while not window_should_close():
     mousep = get_mouse_position()
     mouse_box = Rectangle(mousep.x-2,mousep.y-2,5,5)
@@ -598,6 +598,7 @@ while not window_should_close():
         if not combo:
             if comboa >1:
                 comboa -=15
+                combo_color_speed = 0.6
         if combo == True:
             if comboa <255:
                 comboa +=15
@@ -624,8 +625,9 @@ while not window_should_close():
         draw_text_ex(MatchWorld,f"${int(score)} Money",Vector2(400,0),50,10,BLACK)
         draw_text_ex(MatchWorld,f"{int(ammo)} Ammo",Vector2(400,40),50,10,BLACK)
         # draw_text_ex(MatchWorld,f"{combo_color_speed} ComboCooldown",Vector2(400,280),50,10,BLACK)
-    if currentScreen == screen.LOSE:
+    if currentScreen != screen.PLAY:
         show_cursor()
+    if currentScreen == screen.LOSE:
         button_Menu.Draw()
         button_Menu.Draw_text()
         button_Menu.Hover()
