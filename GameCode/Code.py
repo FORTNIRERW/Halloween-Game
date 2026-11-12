@@ -6,7 +6,7 @@ import random
 particless =-1
 damage = 2
 score = 50
-tokens = 0
+tokens = 20
 ammo = 150
 max_ammo = 150
 gunsize = 50
@@ -26,6 +26,9 @@ pumpkinspeed = 5
 maxspeed = 10
 combo = False
 dead = False
+rerollcost = 1
+rerollmult = 1
+cards_list = []
 class screen(Enum): # this is so cool
     PLAY = auto()
     LOSE = auto()
@@ -66,6 +69,10 @@ def reset():
     global enemydamage
     global currentScreen
     global reloading
+    global rerollcost
+    global rerollmult
+    rerollcost = 1
+    rerollmult = 1
     enemydamage = 10
     particless =-1
     damage = 2
@@ -104,7 +111,7 @@ class Pumpkin:
         global max_money_gained
         self.pos_x = pos_x
         self.pos_y = pos_y
-        self.speed = random.randrange(1,maxspeed)
+        self.speed = random.randrange(int(maxspeed/10),int(maxspeed)+1)
         self.points = max_money_gained
         self.texture = texture
         self.size = size
@@ -458,8 +465,89 @@ class Button:
     def Check_click(self):
         if check_collision_recs(self.collision,mouse_box) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
             return True
+class Card:
+    def __init__(self,texture,posx,posy,size,max_size,pixal_width,pixal_height,cost):
+        self.texture = texture
+        self.posx = posx
+        self.posy = posy
+        self.size = size
+        self.max_size = max_size
+        self.pixal_width = pixal_width
+        self.sentence = "not gun"
+        self.pixal_height = pixal_height
+        self.cost = cost
 
-init_window(1800,1000,"BOB")
+        self.xbefore = int((self.size*(self.size*self.pixal_width))/2) # 300
+        self.ybefore = int((self.size*(self.size*self.pixal_height))/2)# 450
+        self.xpost = int((self.max_size*(self.size*self.pixal_width))/2) # 300
+        self.ypost = int((self.max_size*(self.size*self.pixal_height))/2)# 450
+        self.collision_box = Rectangle(self.posx-self.xbefore,self.posy-self.ybefore,int(200*self.size),int(300*self.size))
+    def draw(self):
+        self.xbefore = int((self.size*(self.size*self.pixal_width))/2) # 300
+        self.ybefore = int((self.size*(self.size*self.pixal_height))/2)# 450
+        draw_texture_ex(self.texture,Vector2(self.posx-self.xbefore,self.posy-self.ybefore),0,self.size,WHITE)
+    def hover(self):
+        self.xpost = int((self.max_size*(self.size*self.pixal_width))/2) # 300
+        self.ypost = int((self.max_size*(self.size*self.pixal_height))/2)# 450
+        draw_text_ex(MatchWorld,f"{self.cost} Tokens",Vector2(self.posx-150,self.posy+150),50,4,GREEN)
+
+        if check_collision_recs(mouse_box,self.collision_box):
+            draw_texture_ex(self.texture,Vector2(int((self.posx-self.xpost)),int((self.posy-self.ypost))),0,self.max_size,WHITE)
+    def check_click(self):
+        global tokens
+        global max_ammo
+        global max_tokens_gained
+        global max_money_gained
+        global reload_time
+        global gunsize
+        global maxspeed
+        global combo_cooldown
+        global damage
+        global mult
+        if check_collision_recs(mouse_box,self.collision_box) and is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT) and tokens>= self.cost:
+            if self.texture == card_gunsize_texture:
+                self.sentence = "your gun is now 2x as large"
+                gunsize *=2
+                tokens -= self.cost
+                return True
+            if self.texture == card_ammo_texture:
+                max_ammo +=100
+                tokens -= self.cost
+                return True
+            if self.texture == card_Damage:
+                damage +=2
+                tokens -= self.cost
+                return True
+            if self.texture == card_ComboTimer:
+                combo_cooldown +=1
+                tokens -= self.cost
+                return True
+            if self.texture == card_Freeze:
+                maxspeed = int(maxspeed *0.8)
+                tokens -= self.cost
+                return True
+            if self.texture == card_Mult:
+                mult +=1
+                tokens -= self.cost
+                return True
+            if self.texture == card_ReloadSpeed:
+                reload_time *= 0.6
+                tokens -= self.cost
+                return True
+            if self.texture == card_Stock:
+                max_money_gained +=15
+                tokens -= self.cost
+                return True
+            if self.texture == card_Dabloon:
+                max_tokens_gained +=1
+                print(self.sentence)
+                tokens -= self.cost
+                return True
+
+    def randomize(self):
+        self.texture = random.choice(cards)
+        self.cost = random.randrange(1,4)
+init_window(0,0,"BOB")
 combo_textures = []
 MomFont = load_font((join("Halloween-Game","Assets","Fonts","Momfont.ttf")))
 MatchWorld = load_font((join("Halloween-Game","Assets","Fonts","Matcha World.ttf")))
@@ -471,6 +559,16 @@ AnotherEnemy1 = load_texture((join("Halloween-Game","Assets","Images","enemy2","
 AnotherEnemy2 = load_texture((join("Halloween-Game","Assets","Images","enemy2","AnotherEnemy2.png")))
 buttonoutline = load_texture((join("Halloween-Game","Assets","Images","BackgroundElements","Buttons1.png")))
 backgroundMain = load_texture((join("Halloween-Game","Assets","Images","BackgroundElements","Background1.png")))
+card_ammo_texture = load_texture((join("Halloween-Game","Assets","Images","cards","CrateUpgrade1.png")))
+card_gunsize_texture = load_texture((join("Halloween-Game","Assets","Images","cards","GunsizeCard.png")))
+card_ComboTimer = load_texture((join("Halloween-Game","Assets","Images","cards","CtimerCard.png")))
+card_Damage = load_texture((join("Halloween-Game","Assets","Images","cards","DamageCard.png")))
+card_Freeze = load_texture((join("Halloween-Game","Assets","Images","cards","FreezeCard.png")))
+card_Mult = load_texture((join("Halloween-Game","Assets","Images","cards","MultCard.png")))
+card_ReloadSpeed = load_texture((join("Halloween-Game","Assets","Images","cards","reloadspeedcard.png")))
+card_Stock = load_texture((join("Halloween-Game","Assets","Images","cards","StockCard.png")))
+card_Dabloon = load_texture((join("Halloween-Game","Assets","Images","cards","DabloonCard.png")))
+cards = [card_ammo_texture,card_Damage,card_gunsize_texture,card_ComboTimer,card_Freeze,card_Mult,card_ReloadSpeed,card_Stock,card_Dabloon]
 for i in range(1,6):
     combo_textures.append(load_texture((join("Halloween-Game","Assets","Images","BackgroundElements",f"ComboOutlineBetter{i}.png"))))
 animation_cooldown = Cooldown(40)
@@ -542,6 +640,8 @@ while not window_should_close():
         if game_time.Start_timer() and levelup == False:
 # game_time = round(get_time(),1)
             levelup = True
+            rerollcost = 1
+            rerollmult = 0.1
             level+=1
             pumpkin_spawn_rate/=1.1
             negative_effect = random.randrange(0,2)
@@ -635,13 +735,30 @@ while not window_should_close():
             currentScreen = screen.MENU
             reset()
     if currentScreen == screen.UPGRADE:
-        draw_text("upgrade 1",100,100,300,BLACK)
-        draw_text("upgrade 2",100,300,300,BLACK)
-        draw_text("upgrade 3",100,500,300,BLACK)
+        draw_text(f"{damage} damage",500,100,100,BLACK)
+        draw_text(f"{combo_cooldown} combocooldown",500,300,100,BLACK)
+        draw_text(f"{rerollcost} reroll",1200,600,80,BLACK)
+        draw_text(f"{tokens} Tokens",1200,0,80,BLACK)
+        if is_key_pressed(rl.KEY_R) and tokens >=rerollcost:
+            cards_list = []
+            cards_list.append(Card(None,900,500,1,1.2,200,300,1))
+            cards_list.append(Card(None,600,500,1,1.2,200,300,1))
+            cards_list.append(Card(None,300,500,1,1.2,200,300,1))
+            print(rerollcost)
+            tokens -= rerollcost
+            rerollcost +=int(rerollmult/2)+rerollcost
+            for card in cards_list:
+                card.randomize()
+        if len(cards_list)>0:
+            for card in cards_list:
+                card.draw()
+                if card.check_click():
+                    cards_list.remove(card)
+                card.hover()
         if is_key_pressed(rl.KEY_V):
             currentScreen = screen.PLAY
-            game_time.Reset_timer()
-            textattack_list = []
+        game_time.Reset_timer()
+        textattack_list = []
     if currentScreen == screen.MENU:
         show_cursor()
         button_play.Draw()
